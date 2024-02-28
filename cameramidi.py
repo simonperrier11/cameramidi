@@ -18,12 +18,27 @@ def main():
     noprint = False
 
     # set MIDI CC numbers (can be overwritten with args)
-    midicc_1 = 1
-    midicc_2 = 2
-    midicc_3 = 3
-    midicc_4 = 4
-    midicc_5 = 5
-    midicc_6 = 6
+    # BGR
+    midicc_bmean = 1
+    midicc_gmean = 2
+    midicc_rmean = 3
+    midicc_bmax = 4
+    midicc_bmin = 5
+    midicc_gmax = 6
+    midicc_gmin = 7
+    midicc_rmax = 8
+    midicc_rmin = 9
+
+    # HSV
+    midicc_hmean = 10
+    midicc_smean = 11
+    midicc_vmean = 12
+    midicc_hmax = 13
+    midicc_hmin = 14
+    midicc_smax = 15
+    midicc_smin = 16
+    midicc_vmax = 17
+    midicc_vmin = 18
 
     # set video capture device index (0 is first one listed)
     device_index = 0
@@ -42,14 +57,29 @@ def main():
 
         if arg.lower() == "--cc":
             try:
-                midicc_1 = int(args[i + 1])
-                midicc_2 = int(args[i + 2])
-                midicc_3 = int(args[i + 3])
-                midicc_4 = int(args[i + 4])
-                midicc_5 = int(args[i + 5])
-                midicc_6 = int(args[i + 6])
+                # BGR
+                midicc_bmean = int(args[i + 1])
+                midicc_gmean = int(args[i + 2])
+                midicc_rmean = int(args[i + 3])
+                midicc_bmax = int(args[i + 4])
+                midicc_bmin = int(args[i + 5])
+                midicc_gmax = int(args[i + 6])
+                midicc_gmin = int(args[i + 7])
+                midicc_rmax = int(args[i + 8])
+                midicc_rmin = int(args[i + 9])
+
+                # HSV
+                midicc_hmean = int(args[i + 10])
+                midicc_smean = int(args[i + 11])
+                midicc_vmean = int(args[i + 12])
+                midicc_hmax = int(args[i + 13])
+                midicc_hmin = int(args[i + 14])
+                midicc_smax = int(args[i + 15])
+                midicc_smin = int(args[i + 16])
+                midicc_vmax = int(args[i + 17])
+                midicc_vmin = int(args[i + 18])
             except:
-                raise ValueError("For manual CC # setting, use the --cc argument followed by the desired 6 CC numbers.")
+                raise ValueError("For manual CC # setting, use the --cc argument followed by the desired 18 CC numbers. See README file for order of CC numbers.")
 
     # get MIDI out ports, use first one found
     midi_out = rtmidi.MidiOut()
@@ -70,56 +100,122 @@ def main():
 
             if retval:
                 # get BGR values for each pixel of frame
-                # the 3rd dimension of the frame is the color channel
                 b_values, g_values, r_values = cv.split(frame)
 
-                # get BGR values mean for frame
+                # compute BGR values for frame
                 b_mean = np.mean(b_values)
                 g_mean = np.mean(g_values)
                 r_mean = np.mean(r_values)
+                b_max = np.max(b_values)
+                b_min = np.min(b_values)
+                g_max = np.max(g_values)
+                g_min = np.min(g_values)
+                r_max = np.max(r_values)
+                r_min = np.min(r_values)
 
-                if not noprint: print("BGR MEAN :", int(b_mean), int(g_mean), int(r_mean))
+                if not noprint:
+                    print("BGR MEANS :", int(b_mean), int(g_mean), int(r_mean))
+                    print("B MAX MIN :", int(b_max), int(b_min))
+                    print("G MAX MIN :", int(g_max), int(g_min))
+                    print("R MAX MIN :", int(r_max), int(r_min))
 
-                # normalize BGR means to MIDI
-                b_midi = normalize_to_midi(b_mean, 0, 255)
-                g_midi = normalize_to_midi(g_mean, 0, 255)
-                r_midi = normalize_to_midi(r_mean, 0, 255)
+                # normalize BGR values to MIDI
+                bmean_midi = normalize_to_midi(b_mean, 0, 255)
+                gmean_midi = normalize_to_midi(g_mean, 0, 255)
+                rmean_midi = normalize_to_midi(r_mean, 0, 255)
+                bmax_midi = normalize_to_midi(b_max, 0, 255)
+                bmin_midi = normalize_to_midi(b_min, 0, 255)
+                gmax_midi = normalize_to_midi(g_max, 0, 255)
+                gmin_midi = normalize_to_midi(g_min, 0, 255)
+                rmax_midi = normalize_to_midi(r_max, 0, 255)
+                rmin_midi = normalize_to_midi(r_min, 0, 255)
 
-                if not noprint: print("BGR MIDI :", b_midi, g_midi, r_midi)
+                if not noprint: 
+                    print("BGR MEANS MIDI :", bmean_midi, gmean_midi, rmean_midi)
+                    print("B MAX MIN MIDI :", bmax_midi, bmin_midi)
+                    print("G MAX MIN MIDI :", gmax_midi, gmin_midi)
+                    print("R MAX MIN MIDI :", rmax_midi, rmin_midi)
+
 
                 # convert frame to HSV color space, get hue/saturation/value arrays
                 hsv_frame = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
                 h_values, s_values, v_values = cv.split(hsv_frame)
 
-                # get HSV values means for frame
+                # compite HSV values for frame
                 h_mean = np.mean(h_values)
                 s_mean = np.mean(s_values)
                 v_mean = np.mean(v_values)
+                h_max = np.max(h_values)
+                h_min = np.min(h_values)
+                s_max = np.max(s_values)
+                s_min = np.min(s_values)
+                v_max = np.max(v_values)
+                v_min = np.min(v_values)
 
-                if not noprint: print("HSV MEAN :", int(h_mean), int(s_mean), int(v_mean))
+                if not noprint: 
+                    print("HSV MEANS :", int(h_mean), int(s_mean), int(v_mean))
+                    print("H MAX MIN :", int(h_max), int(h_min))
+                    print("S MAX MIN :", int(s_max), int(s_min))
+                    print("V MAX MIN :", int(v_max), int(v_min))
 
-                # normalize HSV means to MIDI
-                h_midi = normalize_to_midi(h_mean, 0, 179) # hue max is 179
-                s_midi = normalize_to_midi(s_mean, 0, 255)
-                v_midi = normalize_to_midi(v_mean, 0, 255)
+                # normalize HSV values to MIDI
+                hmean_midi = normalize_to_midi(h_mean, 0, 179) # hue max is 179
+                smean_midi = normalize_to_midi(s_mean, 0, 255)
+                vmean_midi = normalize_to_midi(v_mean, 0, 255)
+                hmax_midi = normalize_to_midi(h_max, 0, 179)
+                hmin_midi = normalize_to_midi(h_min, 0, 179)
+                smax_midi = normalize_to_midi(s_max, 0, 255)
+                smin_midi = normalize_to_midi(s_min, 0, 255)
+                vmax_midi = normalize_to_midi(v_max, 0, 255)
+                vmin_midi = normalize_to_midi(v_min, 0, 255)
 
-                if not noprint: print("HSV MIDI :", h_midi, s_midi, v_midi)
+                if not noprint:
+                    print("HSV MEANS MIDI :", hmean_midi, smean_midi, vmean_midi)
+                    print("H MAX MIN MIDI :", hmax_midi, hmin_midi)
+                    print("S MAX MIN MIDI :", smax_midi, smin_midi)
+                    print("V MAX MIN MIDI :", vmax_midi, vmin_midi)
 
                 # build MIDI CC messages
-                control_r = [0xB0, midicc_1, b_midi]
-                control_g = [0xB0, midicc_2, g_midi]
-                control_b = [0xB0, midicc_3, r_midi]
-                control_h = [0xB0, midicc_4, h_midi]
-                control_s = [0xB0, midicc_5, s_midi]
-                control_v = [0xB0, midicc_6, v_midi]
+                control_bmean = [0xB0, midicc_bmean, bmean_midi]
+                control_gmean = [0xB0, midicc_gmean, gmean_midi]
+                control_rmean = [0xB0, midicc_rmean, rmean_midi]
+                control_bmax = [0xB0, midicc_bmax, bmax_midi]
+                control_bmin = [0xB0, midicc_bmin, bmin_midi]
+                control_gmax = [0xB0, midicc_gmax, gmax_midi]
+                control_gmin = [0xB0, midicc_gmin, gmin_midi]
+                control_rmax = [0xB0, midicc_rmax, rmax_midi]
+                control_rmin = [0xB0, midicc_rmin, rmin_midi]
+
+                control_hmean = [0xB0, midicc_hmean, hmean_midi]
+                control_smean = [0xB0, midicc_smean, smean_midi]
+                control_vmean = [0xB0, midicc_vmean, vmean_midi]
+                control_hmax = [0xB0, midicc_hmax, hmax_midi]
+                control_hmin = [0xB0, midicc_hmin, hmin_midi]
+                control_smax = [0xB0, midicc_smax, smax_midi]
+                control_smin = [0xB0, midicc_smin, smin_midi]
+                control_vmax = [0xB0, midicc_vmax, vmax_midi]
+                control_vmin = [0xB0, midicc_vmin, vmin_midi]
 
                 # send MIDI CC messages
-                midi_out.send_message(control_b)
-                midi_out.send_message(control_g)
-                midi_out.send_message(control_r)
-                midi_out.send_message(control_h)
-                midi_out.send_message(control_s)
-                midi_out.send_message(control_v)
+                midi_out.send_message(control_bmean)
+                midi_out.send_message(control_gmean)
+                midi_out.send_message(control_rmean)
+                midi_out.send_message(control_bmax)
+                midi_out.send_message(control_bmin)
+                midi_out.send_message(control_gmax)
+                midi_out.send_message(control_gmin)
+                midi_out.send_message(control_rmax)
+                midi_out.send_message(control_rmin)
+
+                midi_out.send_message(control_hmean)
+                midi_out.send_message(control_smean)
+                midi_out.send_message(control_vmean)
+                midi_out.send_message(control_hmax)
+                midi_out.send_message(control_hmin)
+                midi_out.send_message(control_smax)
+                midi_out.send_message(control_smin)
+                midi_out.send_message(control_vmax)
+                midi_out.send_message(control_vmin)
 
                 # mini sleep to not spam too much
                 time.sleep(0.005)
