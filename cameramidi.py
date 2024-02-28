@@ -25,11 +25,20 @@ def main():
     midicc_5 = 5
     midicc_6 = 6
 
+    # set video capture device index (0 is first one listed)
+    device_index = 0
+
     # parse script arguments, set flags and values accordingly
     args = sys.argv[1:]
     for i, arg in enumerate(args):
         if arg.lower() == "--noprint":
             noprint = True
+
+        if arg.lower() == "--deviceindex":
+            try:
+                device_index = int(args[i + 1])
+            except:
+                raise ValueError("For manual capture device index setting, use the --deviceindex argument followed by the desired capture device index.")
 
         if arg.lower() == "--cc":
             try:
@@ -53,7 +62,7 @@ def main():
         midi_out.open_virtual_port("cameramidi Virtual MIDI Port")
 
     with midi_out:
-        capture = cv.VideoCapture(0)
+        capture = cv.VideoCapture(device_index)
 
         while True:
             # read capture to get frame
