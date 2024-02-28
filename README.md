@@ -20,16 +20,21 @@ You might need to give camera access permission, depending on your operating sys
 
 To quit the script, simply type ```CTRL+C``` in your terminal.
 
-By default, the script will print each value (means, MIDI values) in your terminal in real-time. The script will also output the MIDI CC messages as CC1, CC2, CC3, CC4, CC5 and CC6.
+By default, the script will analyze the feed of the first video capture device found (device index 0). It will print each value (BGR and HSV means with the corresponding MIDI-normalized values) in your terminal in real-time. The script will also output the MIDI CC messages as CC1, CC2, CC3, CC4, CC5 and CC6. You can use the arguments listed below to customize this behavior.
 
 ## Arguments
 
 ```--noprint``` : Use this argument if you want the script to not print values in your terminal.
 
-```--cc``` : Use this argument, followed by 6 numbers, to define which MIDI CC numbers to use. Example, if you want to use CC numbers 20-25 instead of 1-6 : 
+```--deviceindex``` : Use this argument if you want to specify the capture device to use manually. For example, if you want to use your second camera instead of the first one (meaning, the capture device with index 1 instead of 0) :
+
+```python3 cameramidi.py --deviceindex 1```
+
+```--cc``` : Use this argument, followed by 6 numbers, to define which MIDI CC numbers to use. For example, if you want to use CC numbers 20-25 instead of 1-6 : 
 
 ```python3 cameramidi.py --cc 20 21 22 23 24 25```
 
 ## Known limitations
-- The script currently only supports one capture device.
+- The script currently only supports analysis of one capture device.
+- The script currently only outputs on one MIDI out device/port.
 - The script currently only outputs on MIDI channel 1.
