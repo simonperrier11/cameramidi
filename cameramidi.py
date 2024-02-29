@@ -13,6 +13,27 @@ import rtmidi
 def normalize_to_midi(val, minval, maxval):
     return int(127 * ((val - minval) / (maxval - minval)))
 
+# zoom frame at coordinates with zoom multiplier
+def zoom_at(frame, zoom, coord=None):
+    # get height and width
+    height, width, _ = [ zoom * i for i in frame.shape ]
+    
+    # zoom from center or coordinates tuple (coord=(x, y))
+    if coord is None: # zoom from center coordinates
+        centerx, centery = width / 2, height / 2
+    else: 
+        centerx, centery = [ zoom * c for c in coord ]
+    
+    frame = cv.resize(frame, (0, 0), fx=zoom, fy=zoom)
+
+    # crop frame
+    frame = frame[ 
+        int(round(centery - height / zoom * 0.5)) : int(round(centery + height / zoom * 0.5)),
+        int(round(centerx - width / zoom * 0.5)) : int(round(centerx + width / zoom * 0.5)),
+        : ]
+    
+    return frame
+
 def main():
     # flag to disable printing
     noprint = False
@@ -39,6 +60,14 @@ def main():
     midicc_smin = 16
     midicc_vmax = 17
     midicc_vmin = 18
+
+    # MEDIAN
+    midicc_bmedian = 19
+    midicc_gmedian = 20
+    midicc_rmedian = 21
+    midicc_hmedian = 22
+    midicc_smedian = 23
+    midicc_vmedian = 24
 
     # set video capture device index (0 is first one listed)
     device_index = 0
@@ -99,8 +128,23 @@ def main():
             retval, frame = capture.read()
 
             if retval:
+                # get image size
+                height, width, channels = frame.shape
+                
+                # apply zoom if needed 
+                frame = zoom_at(frame, 3)
+
+                # show frame
+                cv.imshow('CAMERAMIDI', frame)
+                cv.waitKey(1)
+
                 # get BGR values for each pixel of frame
                 b_values, g_values, r_values = cv.split(frame)
+
+                # TODO: BGR median
+                b_median = np.median(b_values)
+                g_median = np.median(g_values)
+                r_median = np.median(r_values)
 
                 # compute BGR values for frame
                 b_mean = np.mean(b_values)
@@ -115,6 +159,7 @@ def main():
 
                 if not noprint:
                     print("BGR MEANS :", int(b_mean), int(g_mean), int(r_mean))
+                    print("BGR MEDIANS :", int(b_median), int(g_median), int(r_median))
                     print("B MAX MIN :", int(b_max), int(b_min))
                     print("G MAX MIN :", int(g_max), int(g_min))
                     print("R MAX MIN :", int(r_max), int(r_min))
@@ -130,16 +175,25 @@ def main():
                 rmax_midi = normalize_to_midi(r_max, 0, 255)
                 rmin_midi = normalize_to_midi(r_min, 0, 255)
 
+                bmedian_midi = normalize_to_midi(b_median, 0, 255)
+                gmedian_midi = normalize_to_midi(g_median, 0, 255)
+                rmedian_midi = normalize_to_midi(r_median, 0, 255)
+
                 if not noprint: 
                     print("BGR MEANS MIDI :", bmean_midi, gmean_midi, rmean_midi)
+                    print("BGR MEDIAN MIDI :", bmedian_midi, gmedian_midi, rmedian_midi)
                     print("B MAX MIN MIDI :", bmax_midi, bmin_midi)
                     print("G MAX MIN MIDI :", gmax_midi, gmin_midi)
                     print("R MAX MIN MIDI :", rmax_midi, rmin_midi)
 
-
                 # convert frame to HSV color space, get hue/saturation/value arrays
                 hsv_frame = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
                 h_values, s_values, v_values = cv.split(hsv_frame)
+
+                # TODO: HSV median
+                h_median = np.median(h_values)
+                s_median = np.median(s_values)
+                v_median = np.median(v_values)
 
                 # compite HSV values for frame
                 h_mean = np.mean(h_values)
@@ -152,8 +206,10 @@ def main():
                 v_max = np.max(v_values)
                 v_min = np.min(v_values)
 
+
                 if not noprint: 
                     print("HSV MEANS :", int(h_mean), int(s_mean), int(v_mean))
+                    print("HSV MEANS :", int(h_median), int(s_median), int(v_median))
                     print("H MAX MIN :", int(h_max), int(h_min))
                     print("S MAX MIN :", int(s_max), int(s_min))
                     print("V MAX MIN :", int(v_max), int(v_min))
@@ -169,8 +225,13 @@ def main():
                 vmax_midi = normalize_to_midi(v_max, 0, 255)
                 vmin_midi = normalize_to_midi(v_min, 0, 255)
 
+                hmedian_midi = normalize_to_midi(h_median, 0, 179)
+                smedian_midi = normalize_to_midi(s_median, 0, 255)
+                vmedian_midi = normalize_to_midi(v_median, 0, 255)
+
                 if not noprint:
                     print("HSV MEANS MIDI :", hmean_midi, smean_midi, vmean_midi)
+                    print("HSV MEDIANS MIDI :", hmedian_midi, smedian_midi, vmedian_midi)
                     print("H MAX MIN MIDI :", hmax_midi, hmin_midi)
                     print("S MAX MIN MIDI :", smax_midi, smin_midi)
                     print("V MAX MIN MIDI :", vmax_midi, vmin_midi)
@@ -196,6 +257,13 @@ def main():
                 control_vmax = [0xB0, midicc_vmax, vmax_midi]
                 control_vmin = [0xB0, midicc_vmin, vmin_midi]
 
+                control_bmedian = [0xB0, midicc_bmedian, bmedian_midi]
+                control_gmedian = [0xB0, midicc_gmedian, gmedian_midi]
+                control_rmedian = [0xB0, midicc_rmedian, rmedian_midi]
+                control_hmedian = [0xB0, midicc_hmedian, hmedian_midi]
+                control_smedian = [0xB0, midicc_smedian, smedian_midi]
+                control_vmedian = [0xB0, midicc_vmedian, vmedian_midi]
+
                 # send MIDI CC messages
                 midi_out.send_message(control_bmean)
                 midi_out.send_message(control_gmean)
@@ -216,6 +284,13 @@ def main():
                 midi_out.send_message(control_smin)
                 midi_out.send_message(control_vmax)
                 midi_out.send_message(control_vmin)
+
+                midi_out.send_message(control_bmedian)
+                midi_out.send_message(control_gmedian)
+                midi_out.send_message(control_rmedian)
+                midi_out.send_message(control_hmedian)
+                midi_out.send_message(control_smedian)
+                midi_out.send_message(control_vmedian)
 
                 # mini sleep to not spam too much
                 time.sleep(0.005)
